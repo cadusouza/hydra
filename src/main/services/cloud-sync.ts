@@ -18,6 +18,7 @@ import i18next, { t } from "i18next";
 import { SystemPath } from "./system-path";
 import { Wine } from "./wine";
 import { SelfHostedSaves } from "./self-hosted-saves";
+import { SelfHostedAutoSync } from "./self-hosted-auto-sync";
 
 export class CloudSync {
   public static getWindowsLikeUserProfilePath(winePrefixPath?: string | null) {
@@ -88,7 +89,9 @@ export class CloudSync {
     objectId: string,
     shop: GameShop,
     downloadOptionTitle: string | null,
-    label?: string
+    label?: string,
+    /** Self-hosted saves: "safety" marks a backup taken before auto-restore. */
+    kind?: "safety"
   ) {
     const hasActiveSubscription =
       SelfHostedSaves.isEnabled() ||
@@ -125,9 +128,14 @@ export class CloudSync {
         : effectiveWinePrefixPath;
     }
 
-    const { uploadUrl } = await HydraApi.post<{
+    const {
+      id: artifactId,
+      uploadUrl,
+      createdAt,
+    } = await HydraApi.post<{
       id: string;
       uploadUrl: string;
+      createdAt?: string;
     }>("/profile/games/artifacts", {
       artifactLengthInBytes: stat.size,
       shop,
@@ -138,6 +146,7 @@ export class CloudSync {
       downloadOptionTitle,
       platform: process.platform,
       label,
+      ...(kind ? { kind } : {}),
     });
 
     const fileBuffer = await fs.promises.readFile(bundleLocation);
@@ -150,6 +159,13 @@ export class CloudSync {
         logger.log(progressEvent);
       },
     });
+
+    if (SelfHostedSaves.isEnabled() && kind !== "safety") {
+      await SelfHostedAutoSync.setAnchor(shop, objectId, {
+        artifactId,
+        createdAt: createdAt ?? new Date().toISOString(),
+      });
+    }
 
     WindowManager.sendToAppWindows(
       `on-upload-complete-${objectId}-${shop}`,

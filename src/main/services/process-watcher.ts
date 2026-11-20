@@ -35,6 +35,7 @@ import {
 } from "./linux-process-match";
 import { isWindowsBatchFile } from "@main/helpers/windows-batch-command";
 import { HydraApi } from "./hydra-api";
+import { SelfHostedSaves } from "./self-hosted-saves";
 import { isSteamAppExecutable } from "./steam-integration/steam-library-executable";
 import {
   resolveActiveSteamImport,
@@ -88,6 +89,8 @@ const isManagedEpicGame = (game: Game) =>
 
 const runAutomaticCloudSaveOnOpen = async (game: Game) => {
   if (isManagedEpicGame(game)) return;
+  // Fork: self-hosted saves sync before launch instead (SelfHostedAutoSync).
+  if (SelfHostedSaves.isEnabled()) return;
   const mode = await getCloudSaveAutomaticSyncMode(game.objectId, game.shop);
 
   if (shouldRunLegacyAutomaticCloudSave(mode)) {

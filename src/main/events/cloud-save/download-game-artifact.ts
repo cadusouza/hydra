@@ -14,6 +14,8 @@ import { gamesSublevel, levelKeys } from "@main/level";
 import { requestGameArtifactDownload } from "./game-artifact-download";
 import { pipeline } from "node:stream/promises";
 import { runWithHydraSaveGuard } from "@main/services/epic/cloud-saves";
+import { SelfHostedSaves } from "@main/services/self-hosted-saves";
+import { SelfHostedAutoSync } from "@main/services/self-hosted-auto-sync";
 
 export const transformLudusaviBackupPathIntoWindowsPath = (
   backupPath: string,
@@ -93,6 +95,76 @@ const restoreLudusaviBackup = (
   });
 };
 
+/**
+ * Downloads an artifact and restores its files over the local saves. Throws on
+ * failure. Callers must hold the Hydra save guard (runWithHydraSaveGuard).
+ */
+export const restoreGameArtifact = async (
+  objectId: string,
+  shop: GameShop,
+  gameArtifactId: string
+) => {
+  const game = await gamesSublevel.get(levelKeys.game(shop, objectId));
+  const effectiveWinePrefixPath = Wine.getEffectivePrefixPath(
+    game?.winePrefixPath,
+    objectId
+  );
+
+  const {
+    downloadUrl,
+    objectKey,
+    homeDir,
+    winePrefixPath: artifactWinePrefixPath,
+    createdAt,
+  } = await requestGameArtifactDownload(gameArtifactId);
+
+  const zipLocation = path.join(SystemPath.getPath("userData"), objectKey);
+  const backupPath = path.join(backupsPath, `${shop}-${objectId}`);
+
+  if (fs.existsSync(backupPath)) {
+    fs.rmSync(backupPath, {
+      recursive: true,
+      force: true,
+    });
+  }
+
+  const response = await axios.get(downloadUrl, {
+    responseType: "stream",
+    onDownloadProgress: (progressEvent) => {
+      WindowManager.sendToAppWindows(
+        `on-backup-download-progress-${objectId}-${shop}`,
+        progressEvent
+      );
+    },
+  });
+
+  const writer = fs.createWriteStream(zipLocation);
+
+  fs.mkdirSync(backupPath, { recursive: true });
+  await pipeline(response.data, writer);
+  await tar.x({
+    file: zipLocation,
+    cwd: backupPath,
+  });
+
+  restoreLudusaviBackup(
+    backupPath,
+    objectId,
+    normalizePath(homeDir),
+    effectiveWinePrefixPath,
+    artifactWinePrefixPath
+  );
+
+  await fs.promises.rm(zipLocation, { force: true }).catch(() => {});
+
+  if (SelfHostedSaves.isEnabled()) {
+    await SelfHostedAutoSync.setAnchor(shop, objectId, {
+      artifactId: gameArtifactId,
+      createdAt: createdAt ?? new Date().toISOString(),
+    });
+  }
+};
+
 const downloadGameArtifact = async (
   _event: Electron.IpcMainInvokeEvent,
   objectId: string,
@@ -101,55 +173,7 @@ const downloadGameArtifact = async (
 ) => {
   return runWithHydraSaveGuard(async () => {
     try {
-      const game = await gamesSublevel.get(levelKeys.game(shop, objectId));
-      const effectiveWinePrefixPath = Wine.getEffectivePrefixPath(
-        game?.winePrefixPath,
-        objectId
-      );
-
-      const {
-        downloadUrl,
-        objectKey,
-        homeDir,
-        winePrefixPath: artifactWinePrefixPath,
-      } = await requestGameArtifactDownload(gameArtifactId);
-
-      const zipLocation = path.join(SystemPath.getPath("userData"), objectKey);
-      const backupPath = path.join(backupsPath, `${shop}-${objectId}`);
-
-      if (fs.existsSync(backupPath)) {
-        fs.rmSync(backupPath, {
-          recursive: true,
-          force: true,
-        });
-      }
-
-      const response = await axios.get(downloadUrl, {
-        responseType: "stream",
-        onDownloadProgress: (progressEvent) => {
-          WindowManager.sendToAppWindows(
-            `on-backup-download-progress-${objectId}-${shop}`,
-            progressEvent
-          );
-        },
-      });
-
-      const writer = fs.createWriteStream(zipLocation);
-
-      fs.mkdirSync(backupPath, { recursive: true });
-      await pipeline(response.data, writer);
-      await tar.x({
-        file: zipLocation,
-        cwd: backupPath,
-      });
-
-      restoreLudusaviBackup(
-        backupPath,
-        objectId,
-        normalizePath(homeDir),
-        effectiveWinePrefixPath,
-        artifactWinePrefixPath
-      );
+      await restoreGameArtifact(objectId, shop, gameArtifactId);
 
       WindowManager.sendToAppWindows(
         `on-backup-download-complete-${objectId}-${shop}`,

@@ -66,6 +66,12 @@ const runDownload = async (
     "@main/services/epic/cloud-saves": {
       runWithHydraSaveGuard: <T>(task: () => Promise<T>) => task(),
     },
+    "@main/services/self-hosted-saves": {
+      SelfHostedSaves: { isEnabled: () => false },
+    },
+    "@main/services/self-hosted-auto-sync": {
+      SelfHostedAutoSync: { setAnchor: async () => {} },
+    },
     yaml: YAML,
     tar: {
       x: async ({ cwd }: { cwd: string }) => {

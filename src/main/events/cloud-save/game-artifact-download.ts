@@ -5,6 +5,8 @@ export interface GameArtifactDownload {
   objectKey: string;
   homeDir: string;
   winePrefixPath: string | null;
+  /** Returned by the self-hosted saves server. */
+  createdAt?: string;
 }
 
 export const requestGameArtifactDownload = (

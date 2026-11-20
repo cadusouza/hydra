@@ -61,6 +61,7 @@ import {
 import type { EpicLaunchParameters } from "@main/services/epic/launch-protocol";
 import { EpicSaveFailure } from "@main/services/epic/cloud-save-protocol";
 import { getEpicCloudSaveService } from "@main/services/epic/cloud-saves";
+import { SelfHostedAutoSync } from "@main/services/self-hosted-auto-sync";
 
 export interface LaunchGameOptions {
   shop: GameShop;
@@ -1098,7 +1099,13 @@ export const launchGame = async (options: LaunchGameOptions) => {
     return null;
   }
 
-  return runWithCloudSaveLaunchGate(options.objectId, options.shop, () =>
-    launchGameWithCloudSaveChecks(options)
+  return runWithCloudSaveLaunchGate(
+    options.objectId,
+    options.shop,
+    async () => {
+      // Fork: pull newer saves from the self-hosted server before launching.
+      await SelfHostedAutoSync.beforeLaunch(options.objectId, options.shop);
+      return launchGameWithCloudSaveChecks(options);
+    }
   );
 };
