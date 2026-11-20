@@ -145,7 +145,7 @@ snap:
 npmRebuild: false
 publish:
   provider: github
-  owner: hydralauncher
+  owner: cadusouza
   repo: hydra
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
