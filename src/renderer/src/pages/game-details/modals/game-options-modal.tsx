@@ -41,6 +41,7 @@ import {
   useLibrary,
   useLibraryGamePresentation,
   useSteamUninstallAction,
+  useSelfHostedSaves,
   useToast,
   useUserDetails,
 } from "@renderer/hooks";
@@ -261,7 +262,11 @@ export function GameOptionsModal({
 
   const { removeGameInstaller, removeGameFromLibrary, isGameDeleting } =
     useDownload();
-  const { userDetails, hasActiveSubscription } = useUserDetails();
+  const { userDetails, hasActiveSubscription: hasHydraCloudSubscription } =
+    useUserDetails();
+  const { selfHostedSavesEnabled } = useSelfHostedSaves();
+  const hasActiveSubscription =
+    hasHydraCloudSubscription || selfHostedSavesEnabled;
   const { artifacts } = useContext(cloudSyncContext);
   const { showHydraCloudModal } = useSubscription();
   const cloudSaveAccessAction = getCloudSaveAccessAction(
@@ -270,7 +275,8 @@ export function GameOptionsModal({
   );
   const cloudSaveSettings = getCloudSaveVisibility(
     game.shop,
-    game.platform
+    game.platform,
+    selfHostedSavesEnabled
   ).settings;
   const { showV2: showCloudSaveV2Settings, legacyPurpose } = cloudSaveSettings;
   const showLegacyCloudSaveSettings = isLegacyCloudSaveSettingsAvailable(

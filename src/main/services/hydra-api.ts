@@ -25,6 +25,7 @@ import {
   summarizeNetworkLogPayload,
 } from "./network-log-payload";
 import { summarizeNetworkError } from "./network-error-summary";
+import { SelfHostedSaves } from "./self-hosted-saves";
 import {
   HydraAuthContextTracker,
   waitForHydraAuthRefresh,
@@ -719,6 +720,9 @@ export class HydraApi {
     params?: any,
     options?: HydraApiOptions
   ) {
+    if (SelfHostedSaves.handles(url)) {
+      return SelfHostedSaves.request<T>("get", url, undefined, params);
+    }
     const generation = await this.validateOptions(options);
     const config = this.requestConfig(options, generation);
     return this.instance
@@ -771,6 +775,9 @@ export class HydraApi {
     data?: any,
     options?: HydraApiOptions
   ) {
+    if (SelfHostedSaves.handles(url)) {
+      return SelfHostedSaves.request<T>("post", url, data);
+    }
     const generation = await this.validateOptions(options);
     return this.instance
       .post<T>(url, data, this.requestConfig(options, generation))
@@ -801,6 +808,9 @@ export class HydraApi {
     data?: any,
     options?: HydraApiOptions
   ) {
+    if (SelfHostedSaves.handles(url)) {
+      return SelfHostedSaves.request<T>("put", url, data);
+    }
     const generation = await this.validateOptions(options);
     return this.instance
       .put<T>(url, data, this.requestConfig(options, generation))
@@ -827,6 +837,9 @@ export class HydraApi {
   }
 
   static async delete<T = any>(url: string, options?: HydraApiOptions) {
+    if (SelfHostedSaves.handles(url)) {
+      return SelfHostedSaves.request<T>("delete", url);
+    }
     const generation = await this.validateOptions(options);
     return this.instance
       .delete<T>(url, this.requestConfig(options, generation))

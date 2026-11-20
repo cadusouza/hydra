@@ -12,6 +12,7 @@ import "./get-file-icon";
 import "./get-image-data-url";
 import "./get-processed-image";
 import "./hydra-api-call";
+import "./get-self-hosted-saves-status";
 import "./install-common-redist";
 import "./install-hydra-decky-plugin";
 import "./is-main-window-open";

@@ -28,7 +28,12 @@ import { cloudSyncContext, gameDetailsContext } from "@renderer/context";
 
 import cloudIconAnimated from "@renderer/assets/icons/cloud-animated.gif";
 import tvEffectVideo from "@renderer/assets/emulation/tv-effect.mp4";
-import { useUserDetails, useLibrary, useAppSelector } from "@renderer/hooks";
+import {
+  useUserDetails,
+  useLibrary,
+  useAppSelector,
+  useSelfHostedSaves,
+} from "@renderer/hooks";
 import {
   CLASSICS_PS_PLATFORM_LABELS,
   resolveClassicsBadge,
@@ -92,11 +97,12 @@ export function GameDetailsContent() {
   } = useContext(gameDetailsContext);
 
   const { userDetails } = useUserDetails();
+  const { selfHostedSavesEnabled } = useSelfHostedSaves();
   const { library } = useLibrary();
 
   const { getGameArtifacts } = useContext(cloudSyncContext);
   const cloudSaveVisibility = game
-    ? getCloudSaveVisibility(game.shop, game.platform)
+    ? getCloudSaveVisibility(game.shop, game.platform, selfHostedSavesEnabled)
     : null;
 
   const aboutTheGame = useMemo(() => {

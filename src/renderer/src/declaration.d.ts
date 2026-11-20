@@ -1230,6 +1230,10 @@ declare global {
     getCloudIframeUrl: () => Promise<string>;
     getVersion: () => Promise<string>;
     getAppSessionId: () => Promise<string>;
+    getSelfHostedSavesStatus: () => Promise<{
+      enabled: boolean;
+      configFilePath: string;
+    }>;
     isStaging: () => Promise<boolean>;
     ping: () => string;
     getDefaultDownloadsPath: () => Promise<string>;

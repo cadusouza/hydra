@@ -26,8 +26,21 @@ export const isLegacyCloudSaveSettingsAvailable = (
 
 export const getCloudSaveVisibility = (
   shop: GameShop,
-  platform?: string | null
+  platform?: string | null,
+  selfHostedSaves = false
 ): CloudSaveVisibility => {
+  // Fork: self-hosted saves speak only the legacy (artifacts) protocol.
+  if (shop === "steam" && selfHostedSaves) {
+    return {
+      hero: "legacy",
+      settings: {
+        showV2: false,
+        showLegacy: true,
+        legacyPurpose: "active",
+      },
+    };
+  }
+
   if (shop === "steam") {
     return {
       hero: "v2",

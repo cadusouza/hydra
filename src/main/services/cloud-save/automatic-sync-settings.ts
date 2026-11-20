@@ -11,6 +11,7 @@ import type {
 } from "@types";
 
 import { WindowManager } from "../window-manager";
+import { SelfHostedSaves } from "../self-hosted-saves";
 import { assertCloudSaveSubscription } from "./cloud-save-access";
 import { assertLegacyCloudSaveWriteAllowed } from "./legacy-cloud-save-policy";
 import { assertCloudSaveV2Eligible } from "./assert-cloud-save-executable";
@@ -58,6 +59,9 @@ const readCloudSaveAutomaticSyncMode = async (
   let v2Enabled = storedV2Enabled;
   if (epicSyncEnabled) v2Enabled = false;
   else if (managedEpic) v2Enabled = storedV2Enabled ?? false;
+  // Self-hosted saves only implement the legacy (artifacts) protocol, so
+  // Steam games use legacy automatic sync instead of Hydra Cloud v2.
+  if (shop === "steam" && SelfHostedSaves.isEnabled()) v2Enabled = false;
   const mode = resolveStoredCloudSaveAutomaticSyncModeForShop(
     shop,
     legacyEnabled,

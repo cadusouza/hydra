@@ -17,6 +17,7 @@ import { assertLegacyCloudSaveWriteAllowed } from "./cloud-save/legacy-cloud-sav
 import i18next, { t } from "i18next";
 import { SystemPath } from "./system-path";
 import { Wine } from "./wine";
+import { SelfHostedSaves } from "./self-hosted-saves";
 
 export class CloudSync {
   public static getWindowsLikeUserProfilePath(winePrefixPath?: string | null) {
@@ -89,12 +90,14 @@ export class CloudSync {
     downloadOptionTitle: string | null,
     label?: string
   ) {
-    const hasActiveSubscription = await db
-      .get<string, User>(levelKeys.user, { valueEncoding: "json" })
-      .then((user) => {
-        const expiresAt = new Date(user?.subscription?.expiresAt ?? 0);
-        return expiresAt > new Date();
-      });
+    const hasActiveSubscription =
+      SelfHostedSaves.isEnabled() ||
+      (await db
+        .get<string, User>(levelKeys.user, { valueEncoding: "json" })
+        .then((user) => {
+          const expiresAt = new Date(user?.subscription?.expiresAt ?? 0);
+          return expiresAt > new Date();
+        }));
 
     if (!hasActiveSubscription) {
       throw new SubscriptionRequiredError();

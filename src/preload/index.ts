@@ -1724,6 +1724,8 @@ contextBridge.exposeInMainWorld("electron", {
   openFolder: (folderPath: string) =>
     ipcRenderer.invoke("openFolder", folderPath),
   getAppSessionId: () => ipcRenderer.invoke("getAppSessionId"),
+  getSelfHostedSavesStatus: () =>
+    ipcRenderer.invoke("getSelfHostedSavesStatus"),
   isStaging: () => ipcRenderer.invoke("isStaging"),
   isPortableVersion: Boolean(process.env.PORTABLE_EXECUTABLE_FILE),
   openExternal: (src: string) => ipcRenderer.invoke("openExternal", src),

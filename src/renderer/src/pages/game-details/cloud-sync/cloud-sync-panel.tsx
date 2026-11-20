@@ -20,6 +20,7 @@ import {
   useAppSelector,
   useDate,
   useFormat,
+  useSelfHostedSaves,
   useToast,
   useUserDetails,
 } from "@renderer/hooks";
@@ -53,7 +54,10 @@ export function CloudSyncPanel({
   const { t: tHydraCloud } = useTranslation("hydra_cloud");
   const { formatDate, formatDateTime } = useDate();
   const { formatNumber } = useFormat();
-  const { hasActiveSubscription } = useUserDetails();
+  const { hasActiveSubscription: hasHydraCloudSubscription } = useUserDetails();
+  const { selfHostedSavesEnabled } = useSelfHostedSaves();
+  const hasActiveSubscription =
+    hasHydraCloudSubscription || selfHostedSavesEnabled;
 
   const {
     artifacts,
